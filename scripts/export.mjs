@@ -1,0 +1,14 @@
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
+import {dirname,resolve} from 'node:path';
+const root=fileURLToPath(new URL('../',import.meta.url));
+const output=resolve(process.argv[2]||root+'dist/CubeFlow_Preview.html');
+let html=await readFile(root+'index.html','utf8');
+html=html.replace('<link rel="stylesheet" href="assets/style.css">','<style>\n'+await readFile(root+'assets/style.css','utf8')+'\n</style>');
+html=html.replace('href="assets/favicon.svg"','href="data:image/svg+xml;base64,'+(await readFile(root+'assets/favicon.svg')).toString('base64')+'"');
+html=html.replace(/<script defer src="assets\/[^"]+"><\/script>/g,'');
+const scripts=[];
+for(const name of ['cube.js','data.js','stats.js','i18n.js','app.js'])scripts.push('<script>\n'+(await readFile(root+'assets/'+name,'utf8')).replaceAll('</script','<\\/script')+'\n</script>');
+html=html.replace('</body>',scripts.join('\n')+'\n</body>');
+await mkdir(dirname(output),{recursive:true});await writeFile(output,html);
+console.log('Exported bilingual standalone HTML.');
